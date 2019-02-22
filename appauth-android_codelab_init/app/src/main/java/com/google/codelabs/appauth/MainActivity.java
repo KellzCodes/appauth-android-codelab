@@ -262,7 +262,65 @@ public class MainActivity extends AppCompatActivity {
     public void onClick(View view) {
 
       // code from the section 'Making API Calls' goes here
+        mAuthState.performActionWithFreshTokens(mAuthorizationService, new AuthState.AuthStateAction() {
+            @Override
+            public void execute(@Nullable String accessToken, @Nullable String idToken, @Nullable AuthorizationException exception) {
+                new AsyncTask<String, Void, JSONObject>() {
+                    @Override
+                    protected JSONObject doInBackground(String... tokens) {
+                        OkHttpClient client = new OkHttpClient();
+                        Request request = new Request.Builder()
+                                .url("https://www.googleapis.com/oauth2/v3/userinfo")
+                                .addHeader("Authorization", String.format("Bearer %s", tokens[0]))
+                                .build();
 
+                        try {
+                            Response response = client.newCall(request).execute();
+                            String jsonBody = response.body().string();
+                            Log.i(LOG_TAG, String.format("User Info Response %s", jsonBody));
+                            return new JSONObject(jsonBody);
+                        } catch (Exception exception) {
+                            Log.w(LOG_TAG, exception);
+                        }
+                        return null;
+                    }
+
+                    @Override
+                    protected void onPostExecute(JSONObject userInfo) {
+                        if (userInfo != null) {
+                            String fullName = userInfo.optString("name", null);
+                            String givenName = userInfo.optString("given_name", null);
+                            String familyName = userInfo.optString("family_name", null);
+                            String imageUrl = userInfo.optString("picture", null);
+                            if (!TextUtils.isEmpty(imageUrl)) {
+                                Picasso.with(mMainActivity)
+                                        .load(imageUrl)
+                                        .placeholder(R.drawable.ic_account_circle_black_48dp)
+                                        .into(mMainActivity.mProfileView);
+                            }
+                            if (!TextUtils.isEmpty(fullName)) {
+                                mMainActivity.mFullName.setText(fullName);
+                            }
+                            if (!TextUtils.isEmpty(givenName)) {
+                                mMainActivity.mGivenName.setText(givenName);
+                            }
+                            if (!TextUtils.isEmpty(familyName)) {
+                                mMainActivity.mFamilyName.setText(familyName);
+                            }
+
+                            String message;
+                            if (userInfo.has("error")) {
+                                message = String.format("%s [%s]", mMainActivity.getString(R.string.request_failed), userInfo.optString("error_description", "No description"));
+                            } else {
+                                message = mMainActivity.getString(R.string.request_complete);
+                            }
+                            Snackbar.make(mMainActivity.mProfileView, message, Snackbar.LENGTH_SHORT)
+                                    .show();
+                        }
+                    }
+                }.execute(accessToken);
+            }
+        });
     }
   }
 }
