@@ -169,7 +169,16 @@ public class MainActivity extends AppCompatActivity {
               AuthorizationRequest.RESPONSE_TYPE_CODE,
               redirectUri
       );
+      builder.setScopes("profile");
+      AuthorizationRequest request = builder.build();
 
+      AuthorizationService authorizationService = new AuthorizationService(view.getContext());
+
+      String action = "com.google.codelabs.appauth.HANDLE_AUTHORIZATION_RESPONSE";
+      Intent postAuthorizationIntent = new Intent(action);
+      PendingIntent pendingIntent = PendingIntent.getActivity(view.getContext(), request.hashCode(),
+              postAuthorizationIntent, 0);
+      authorizationService.performAuthorizationRequest(request, pendingIntent);
     }
   }
 
