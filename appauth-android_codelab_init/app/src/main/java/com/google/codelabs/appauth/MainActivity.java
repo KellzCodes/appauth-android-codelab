@@ -51,6 +51,9 @@ import net.openid.appauth.TokenResponse;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -101,11 +104,14 @@ public class MainActivity extends AppCompatActivity {
     enablePostAuthorizationFlows();
 
     // wire click listeners
-    mAuthorize.setOnClickListener(new AuthorizeListener());
-
+    mAuthorize.setOnClickListener(new AuthorizeListener(this));
       // Retrieve app restrictions and take appropriate action
       getAppRestrictions();
   }
+
+  public String getLoginHint(){
+      return mLoginHint;
+    }
 
   private void enablePostAuthorizationFlows() {
     mAuthState = restoreAuthState();
@@ -188,8 +194,13 @@ public class MainActivity extends AppCompatActivity {
    * Kicks off the authorization flow.
    */
   public static class AuthorizeListener implements Button.OnClickListener {
-    @Override
-    public void onClick(View view) {
+      private final MainActivity mMainActivity;
+      public AuthorizeListener(@NonNull MainActivity mainActivity){
+          mMainActivity = mainActivity;
+      }
+
+      @Override
+      public void onClick(View view) {
 
       // code from the step 'Create the Authorization Request',
       // and the step 'Perform the Authorization Request' goes here.
@@ -207,6 +218,16 @@ public class MainActivity extends AppCompatActivity {
               redirectUri
       );
       builder.setScopes("profile");
+      if(mMainActivity.getLoginHint() != null){
+          Map loginHintMap = new HashMap<String, String>();
+          loginHintMap.put(LOGIN_HINT,mMainActivity.getLoginHint());
+          builder.setAdditionalParameters(loginHintMap);
+
+          Log.i(LOG_TAG, String.format("login_hint: %s", mMainActivity.getLoginHint()));
+
+          Log.i(LOG_TAG, String.format("login_hint: %s", mMainActivity.getLoginHint()));
+      }
+
       AuthorizationRequest request = builder.build();
 
       AuthorizationService authorizationService = new AuthorizationService(view.getContext());
@@ -216,6 +237,7 @@ public class MainActivity extends AppCompatActivity {
       PendingIntent pendingIntent = PendingIntent.getActivity(view.getContext(), request.hashCode(),
               postAuthorizationIntent, 0);
       authorizationService.performAuthorizationRequest(request, pendingIntent);
+
     }
   }
 
