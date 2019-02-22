@@ -116,7 +116,28 @@ public class MainActivity extends AppCompatActivity {
   private void handleAuthorizationResponse(@NonNull Intent intent) {
 
     // code from the step 'Handle the Authorization Response' goes here.
+      AuthorizationResponse response = AuthorizationResponse.fromIntent(intent);
+      AuthorizationException error = AuthorizationException.fromIntent(intent);
+      final AuthState authState = new AuthState(response, error);
 
+      if (response != null) {
+          Log.i(LOG_TAG, String.format("Handled Authorization Response %s ", authState.toJsonString()));
+          AuthorizationService service = new AuthorizationService(this);
+          service.performTokenRequest(response.createTokenExchangeRequest(), new AuthorizationService.TokenResponseCallback() {
+              @Override
+              public void onTokenRequestCompleted(@Nullable TokenResponse tokenResponse, @Nullable AuthorizationException exception) {
+                  if (exception != null) {
+                      Log.w(LOG_TAG, "Token Exchange failed", exception);
+                  } else {
+                      if (tokenResponse != null) {
+                          authState.update(tokenResponse, exception);
+                          persistAuthState(authState);
+                          Log.i(LOG_TAG, String.format("Token Response [ Access Token: %s, ID Token: %s ]", tokenResponse.accessToken, tokenResponse.idToken));
+                      }
+                  }
+              }
+          });
+      }
   }
 
   private void persistAuthState(@NonNull AuthState authState) {
@@ -182,7 +203,34 @@ public class MainActivity extends AppCompatActivity {
     }
   }
 
-  public static class SignOutListener implements Button.OnClickListener {
+    @Override
+    protected void onNewIntent(Intent intent) {
+      checkIntent(intent);
+   }
+
+   private void checkIntent(@Nullable Intent intent){
+      if(intent != null){
+          String action = intent.getAction();
+          switch (action){
+              case "com.google.codelabs.appauth.HANDLE_AUTHORIZATION_RESPONSE":
+                  if(!intent.hasExtra(USED_INTENT)){
+                      handleAuthorizationResponse(intent);
+                      intent.putExtra(USED_INTENT, true);
+                  }
+                  break;
+              default:
+                  // Do nothing
+          }
+      }
+   }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        checkIntent(getIntent());
+    }
+
+    public static class SignOutListener implements Button.OnClickListener {
 
     private final MainActivity mMainActivity;
 
