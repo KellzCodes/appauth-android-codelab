@@ -156,6 +156,19 @@ public class MainActivity extends AppCompatActivity {
 
       // code from the step 'Create the Authorization Request',
       // and the step 'Perform the Authorization Request' goes here.
+      AuthorizationServiceConfiguration serviceConfiguration = new AuthorizationServiceConfiguration(
+              Uri.parse("https://accounts.google.com/o/oath2/v2/auth"),
+              Uri.parse("https://www.googleapis.com/oauth2/v4/token")
+      );
+
+      String clientId = "511828570984-fuprh0cm7665emlne3rnf9pk34kkn86s.apps.googleusercontent.com";
+      Uri redirectUri = Uri.parse("com.google.codelabs.appauth:/oauth2callback");
+      AuthorizationRequest.Builder builder = new AuthorizationRequest.Builder(
+              serviceConfiguration,
+              clientId,
+              AuthorizationRequest.RESPONSE_TYPE_CODE,
+              redirectUri
+      );
 
     }
   }
